@@ -22,11 +22,11 @@
 </script>
 
 <div class="mt-6 w-full">
-	<div class="rounded-lg bg-gray-50 p-4 shadow-sm">
+	<div class="rounded-lg bg-gray-50 p-4">
 		<h3 class="mb-2 text-lg font-semibold text-gray-800">Chord Detection</h3>
 
 		{#if notes.length === 0}
-			<p class="italic text-gray-500">Play notes to detect chords</p>
+			<p class="text-gray-500">Play notes to detect chords</p>
 		{:else if currentChords.length === 0}
 			<p class="text-gray-500">No recognized chord</p>
 		{:else}
