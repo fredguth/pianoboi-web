@@ -19,6 +19,20 @@
 
 	onMount(() => {
 		initializeWebMidi();
+
+		// Center the keyboard on middle octaves after rendering
+		setTimeout(() => {
+			const pianoContainer = document.querySelector('.piano-container');
+			if (pianoContainer) {
+				// Calculate middle octave position
+				const totalWidth = pianoContainer.scrollWidth;
+				const viewportWidth = pianoContainer.clientWidth;
+				// Center on octave 4 (middle C)
+				const scrollToPosition = (totalWidth - viewportWidth) / 2;
+				pianoContainer.scrollLeft = scrollToPosition;
+				console.log('Centered keyboard at scroll position:', scrollToPosition);
+			}
+		}, 100);
 	});
 
 	onDestroy(() => {
@@ -121,33 +135,57 @@
 		detail: { name: string; accidental: string; octave: number; isOn: boolean };
 	}) {
 		const noteData = event.detail;
+		console.log('Piano key event:', noteData);
+
 		if (noteData.isOn) {
 			// Simulate note-on
+			// Create a WebMidi compatible note object
 			const note = {
-				name: noteData.name,
+				name: noteData.name.toUpperCase(), // WebMidi uses uppercase notes
 				accidental: noteData.accidental,
 				octave: noteData.octave,
-				number:
-					60 +
-					noteData.octave * 12 +
-					['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].indexOf(
-						noteData.name + (noteData.accidental || '')
-					)
+				// Calculate MIDI note number (middle C = 60)
+				number: calculateNoteNumber(noteData.name, noteData.accidental, noteData.octave),
+				// Additional properties that might be needed
+				identifier: `${noteData.name}${noteData.accidental}${noteData.octave}`,
+				attack: 0.5,
+				release: 0.5
 			};
+
+			console.log('Created WebMidi note object:', note);
 			activeNotes = [...activeNotes, note];
-			console.log('Piano key press (note-on):', note);
 		} else {
 			// Simulate note-off
 			activeNotes = activeNotes.filter(
 				(note) =>
 					!(
-						note.name === noteData.name &&
+						note.name === noteData.name.toUpperCase() &&
 						note.accidental === noteData.accidental &&
 						note.octave === noteData.octave
 					)
 			);
-			console.log('Piano key release (note-off):', noteData);
 		}
+	}
+
+	// Calculate MIDI note number from note name, accidental and octave
+	function calculateNoteNumber(name: string, accidental: string, octave: number): number {
+		// Base notes C to B in semitones from C
+		const baseNotes: { [key: string]: number } = {
+			C: 0,
+			D: 2,
+			E: 4,
+			F: 5,
+			G: 7,
+			A: 9,
+			B: 11
+		};
+
+		// Calculate semitones from middle C (C4 = 60)
+		const noteSemitones = baseNotes[name.toUpperCase()];
+		const accidentalOffset = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0;
+		const octaveOffset = (octave - 4) * 12; // C4 is MIDI 60
+
+		return 60 + octaveOffset + noteSemitones + accidentalOffset;
 	}
 </script>
 
@@ -210,7 +248,7 @@
 		<Piano notes={activeNotes} on:notePress={handlePianoNotePress} />
 	</div>
 
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 		<div>
 			<h2 class="mb-2 text-xl font-bold">Current Chord</h2>
 			<ChordDisplay notes={activeNotes} signature={currentSignature} />

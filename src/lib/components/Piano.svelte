@@ -3,10 +3,10 @@
 	import type { Note } from 'webmidi';
 
 	export let notes: Note[] = [];
-	export let octaveRange = { min: 3, max: 5 };
+	export let octaveRange = { min: 1, max: 7 }; // Expanded octave range
 
 	const dispatch = createEventDispatcher();
-	const whiteKeyWidth = 40; // Base width for calculations
+	const whiteKeyWidth = 36; // Slightly reduced key width to fit more keys
 
 	// Function to determine if key is black
 	function isBlackKey(note: string) {
@@ -116,10 +116,30 @@
 </div>
 
 <style>
-	/* Mobile responsiveness */
-	@media (max-width: 768px) {
-		:global(.piano-container) {
-			overflow-x: auto;
-		}
+	/* Make sure the piano container enables scrolling */
+	.piano-container {
+		overflow-x: auto;
+		scrollbar-width: thin;
+		scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+		max-width: 100%;
+	}
+
+	/* For WebKit browsers (Chrome, Safari) */
+	.piano-container::-webkit-scrollbar {
+		height: 8px;
+	}
+
+	.piano-container::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.piano-container::-webkit-scrollbar-thumb {
+		background-color: rgba(156, 163, 175, 0.5);
+		border-radius: 4px;
+	}
+
+	/* Ensure piano scrolls smoothly */
+	.piano {
+		transition: transform 0.1s ease;
 	}
 </style>
