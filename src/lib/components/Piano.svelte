@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import type { Note } from 'webmidi';
 
 	export let notes: Note[] = [];
 	export let readonly = false; // Add readonly prop to disable interaction
+	export let compact = false; // Compact display in saved keyboards
+	export let showLabels = false; // Add showLabels prop to display note names consistently
 
 	// For dispatching note events to parent
 	const dispatch = createEventDispatcher();
@@ -64,33 +66,55 @@
 		}
 	}
 
-	// Calculate relative key width based on piano width
-	function getKeyWidth() {
-		// Let's make white keys slightly narrower for more compact display
-		return '1.8rem'; // Fixed width for consistency
-	}
+	// Determine which octaves to show
+	$: displayOctaves = compact ? octaves : octaves;
+
+	// Determine if labels should be visible
+	$: showNotesLabels = !compact || showLabels;
+
+	// Center the keyboard on load
+	onMount(() => {
+		setTimeout(() => {
+			if (container) {
+				// Center the keyboard on middle C
+				const totalWidth = container.scrollWidth;
+				const viewportWidth = container.clientWidth;
+				const scrollToPosition = (totalWidth - viewportWidth) / 2;
+				container.scrollLeft = scrollToPosition;
+			}
+		}, 50);
+	});
 </script>
 
 <div class="piano-wrapper w-full overflow-hidden">
 	<div
-		class="piano-container flex overflow-x-auto pb-4 pt-1"
+		class="piano-container flex pb-2 pt-1"
+		class:overflow-x-auto={!compact}
+		class:overflow-x-hidden={compact}
 		bind:this={container}
 		class:non-interactive={readonly}
 	>
-		{#each octaves as octave}
+		{#each displayOctaves as octave}
 			<div class="octave-container relative flex">
 				{#each naturalKeys as note}
 					<!-- White key -->
 					<div
-						class="white-key flex h-32 w-[1.8rem] cursor-pointer items-end justify-center border border-gray-300 bg-white pb-2 text-xs font-semibold text-gray-700"
+						class="white-key flex cursor-pointer items-end justify-center border border-gray-300 bg-white pb-2"
 						class:active={activeKeys.includes(`${note.toLowerCase()}${octave}`)}
+						class:h-32={!compact}
+						class:h-24={compact}
+						class:w-[1.8rem]={!compact}
+						class:w-[1.4rem]={compact}
 						tabindex="0"
 						on:mousedown={(e) => handleMouseDown(e, note, '', octave)}
 						on:mouseup={(e) => handleMouseUp(e, note, '', octave)}
 						on:mouseleave={(e) => handleMouseLeave(e, note, '', octave)}
 						on:blur={() => !readonly && handleNotePress(note, '', octave, false)}
 					>
-						{note}{octave}
+						<!-- Note label shown based on showNotesLabels -->
+						{#if showNotesLabels}
+							<span class="text-xs font-semibold text-gray-400">{note}{octave}</span>
+						{/if}
 					</div>
 				{/each}
 
@@ -101,16 +125,25 @@
 					{@const offset = position === 2 ? position + 1 : position}
 					<!-- Black key - positioned absolutely -->
 					<div
-						class="absolute top-0 z-10 h-20 w-5 cursor-pointer bg-gray-800 text-[0.6rem] font-medium text-white"
+						class="black-key absolute top-0 z-10 cursor-pointer bg-gray-800 text-white"
 						class:active={activeKeys.includes(`${baseNote.toLowerCase()}#${octave}`)}
-						style="left: calc({offset} * 1.8rem + 1.25rem); width: 1.1rem;"
+						class:h-20={!compact}
+						class:h-14={compact}
+						style="left: calc({offset} * {compact ? '1.4rem' : '1.8rem'} + {compact
+							? '0.95rem'
+							: '1.25rem'}); width: {compact ? '0.9rem' : '1.1rem'};"
 						tabindex="0"
 						on:mousedown={(e) => handleMouseDown(e, baseNote, '#', octave)}
 						on:mouseup={(e) => handleMouseUp(e, baseNote, '#', octave)}
 						on:mouseleave={(e) => handleMouseLeave(e, baseNote, '#', octave)}
 						on:blur={() => !readonly && handleNotePress(baseNote, '#', octave, false)}
 					>
-						<span class="absolute bottom-2 left-0 right-0 text-center">{sharpNote}{octave}</span>
+						<!-- Note label shown based on showNotesLabels -->
+						{#if showNotesLabels}
+							<span class="absolute bottom-2 left-0 right-0 text-center text-[0.6rem] font-medium"
+								>{sharpNote}{octave}</span
+							>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -120,9 +153,7 @@
 
 <style>
 	.piano-container {
-		/* Smoother scrolling on touch devices */
 		-webkit-overflow-scrolling: touch;
-		/* Hide scrollbar for cleaner look */
 		scrollbar-width: thin;
 		scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 	}
@@ -141,20 +172,30 @@
 	}
 
 	.white-key.active {
-		background-color: #e5e7eb;
-		border-color: #9ca3af;
+		background-color: #3b82f6;
+		border-color: #2563eb;
 	}
 
 	.black-key.active {
-		background-color: #4b5563;
+		background-color: #3b82f6;
 	}
 
 	.non-interactive {
 		pointer-events: none;
 	}
 
+	.piano-container.overflow-x-hidden {
+		overflow-x: auto !important;
+		max-width: 100%;
+	}
+
+	.piano-wrapper {
+		max-width: 100%;
+		position: relative;
+	}
+
 	@media (max-width: 640px) {
-		.white-key {
+		.white-key:not(.compact) {
 			height: 7rem;
 		}
 	}

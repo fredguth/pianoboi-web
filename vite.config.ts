@@ -7,7 +7,7 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 
 	server: {
-		allowedHosts: ['d078-58-178-116-127.ngrok-free.app']
+		allowedHosts: ['2a39-58-178-116-127.ngrok-free.app']
 	},
 	test: {
 		workspace: [
