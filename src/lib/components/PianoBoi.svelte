@@ -17,6 +17,7 @@
 	let midiError = '';
 	let isInitializing = false;
 	let isMenuOpen = false;
+	let isKeyMenuOpen = false;
 
 	// View mode state
 	let viewMode: 'keyboard' | 'sheet' = 'keyboard';
@@ -142,65 +143,30 @@
 		// so next insertion will be after this chord
 		setCurrentChord(id);
 
-		// Flash the new insertion marker
-		setTimeout(() => {
-			flashInsertionMarker(id);
-		}, 100);
-
 		// Persist saved chords
 		persistSavedChords();
 	}
 
-	// Function to set the current chord and highlight the insertion marker
+	// Function to set the current chord and update the insertion marker
 	function setCurrentChord(id: string | null): void {
 		currentChordId = id;
-		// Flash the insertion marker if there is one
 		if (id) {
-			flashInsertionMarker(id);
-		}
-	}
-
-	// Function to animate the insertion marker
-	function flashInsertionMarker(id: string): void {
-		setTimeout(() => {
 			const markerId = id === 'top' ? 'insert-marker-top' : `insert-marker-${id}`;
 			const marker = document.getElementById(markerId);
 			if (marker) {
-				// Reset any ongoing animations
-				gsap.killTweensOf(marker.querySelector('.marker-icon'));
-				gsap.killTweensOf(marker.querySelector('.insertion-line'));
-
-				// Animate the marker icon
-				gsap
-					.timeline()
-					.to(marker.querySelector('.marker-icon'), {
-						scale: 1.2,
-						duration: 0.3,
-						ease: 'back.out'
-					})
-					.to(marker.querySelector('.marker-icon'), {
-						scale: 1,
-						duration: 0.5,
-						ease: 'elastic.out(1, 0.3)'
-					});
-
-				// Create a pulsing effect for the line
-				gsap.to(marker.querySelector('.insertion-line'), {
-					opacity: 1,
-					backgroundColor: '#60a5fa', // blue-400
-					duration: 0.4,
-					yoyo: true,
-					repeat: 1,
-					ease: 'power2.inOut'
-				});
-
-				// Scroll the marker into view if needed
-				marker.scrollIntoView({
-					behavior: 'smooth',
-					block: 'center'
-				});
+				marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}
-		}, 50); // Small delay to ensure DOM is updated
+		}
+	}
+
+	// Function to handle dropdown menu visibility
+	function toggleMenu() {
+		isMenuOpen = !isMenuOpen;
+	}
+
+	// Function to handle key signature menu visibility
+	function toggleKeyMenu() {
+		isKeyMenuOpen = !isKeyMenuOpen;
 	}
 
 	// Delete a chord by ID
@@ -405,11 +371,6 @@
 		viewMode = mode;
 	}
 
-	// Toggle menu open/close
-	function toggleMenu() {
-		isMenuOpen = !isMenuOpen;
-	}
-
 	// Generate the scale degree chords for a given key
 	function generateScaleChords(signature: Signature) {
 		const majorScale = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
@@ -485,9 +446,6 @@
 
 	// Scale degrees
 	$: scaleChords = generateScaleChords(currentSignature);
-
-	// Toggle key signature menu
-	let isKeyMenuOpen = false;
 
 	// Function to check if two sets of notes are equivalent (same pitch classes)
 	function chordsEqual(playedNotes: any[], chordNotes: any): boolean {
@@ -768,7 +726,6 @@
 						<div
 							class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md border border-gray-200 bg-white shadow-lg"
 							style="z-index: 9999;"
-							transition:fade={{ duration: 150 }}
 						>
 							<div class="p-2">
 								<div class="mb-2 flex justify-between border-b pb-2">
@@ -820,7 +777,7 @@
 				<div class="relative">
 					<button
 						class="flex items-center gap-1 rounded bg-blue-500 px-3 py-1.5 text-sm font-medium text-white"
-						on:click={() => (isKeyMenuOpen = !isKeyMenuOpen)}
+						on:click={toggleKeyMenu}
 					>
 						{currentSignature.id}
 						<svg
@@ -840,7 +797,6 @@
 					{#if isKeyMenuOpen}
 						<div
 							class="absolute left-0 top-full z-30 mt-1 w-80 rounded-md border border-gray-200 bg-white p-2 shadow-lg"
-							transition:fade={{ duration: 150 }}
 						>
 							<div class="mb-2 border-b pb-1 text-sm font-medium text-gray-700">Key Signatures</div>
 							<div class="grid grid-cols-2 gap-2">
@@ -932,12 +888,12 @@
 							class:active={currentChordId === 'top'}
 							class:hidden={currentChordId !== 'top'}
 						>
-							<div class="insertion-line"></div>
+							<div class="h-[2px] w-full rounded bg-blue-200"></div>
 							<div
-								class="marker-icon left-1/2 h-7 w-7 -translate-x-1/2"
+								class="absolute left-1/2 top-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white shadow-sm hover:bg-blue-50"
 								on:click={() => setCurrentChord('top')}
 							>
-								<i class="fas fa-plus"></i>
+								<i class="fas fa-plus text-blue-500"></i>
 							</div>
 						</div>
 
@@ -1024,12 +980,12 @@
 								class:active={currentChordId === chord.id}
 								class:hidden={currentChordId !== chord.id}
 							>
-								<div class="insertion-line"></div>
+								<div class="h-[2px] w-full rounded bg-blue-200"></div>
 								<div
-									class="marker-icon left-1/2 h-7 w-7 -translate-x-1/2"
+									class="absolute left-1/2 top-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white shadow-sm hover:bg-blue-50"
 									on:click={() => setCurrentChord(chord.id)}
 								>
-									<i class="fas fa-plus"></i>
+									<i class="fas fa-plus text-blue-500"></i>
 								</div>
 							</div>
 						{/each}
@@ -1050,8 +1006,6 @@
 				const marker = document.getElementById(markerId);
 				if (marker) {
 					marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					// Flash the marker
-					flashInsertionMarker(currentChordId);
 				}
 			} else {
 				// Otherwise, focus on the bottom of the list to add a new chord at the end
@@ -1074,12 +1028,12 @@
 				<div>
 					<!-- Save button -->
 					<button
-						class="flex items-center gap-1 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-600 hover:shadow"
+						class="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 hover:shadow-md active:bg-blue-700"
 						on:click={saveCurrentChord}
 					>
 						<i class="fas fa-save"></i>
 						<span class="ml-1.5">Save Chord</span>
-						<span class="ml-1 rounded bg-blue-600 px-1 text-xs opacity-80">Space</span>
+						<span class="ml-1 rounded bg-blue-600/80 px-1.5 py-0.5 text-xs font-medium">Space</span>
 					</button>
 				</div>
 
@@ -1119,7 +1073,9 @@
 						{#if activeNotes.length > 0}
 							<SheetMusic notes={activeNotes} signature={currentSignature} />
 						{:else}
-							<div class="flex h-full items-center justify-center text-sm text-gray-400">
+							<div
+								class="flex h-full min-h-[80px] items-center justify-center text-sm text-gray-400"
+							>
 								Play notes to see sheet music
 							</div>
 						{/if}
@@ -1238,8 +1194,7 @@
 	}
 
 	.insertion-marker.active .insertion-line {
-		height: 3px;
-		background-color: #93c5fd;
+		@apply h-[2px] bg-blue-300;
 	}
 
 	.insertion-marker .marker-icon {
@@ -1259,11 +1214,7 @@
 	}
 
 	.insertion-marker.active .marker-icon {
-		width: 32px;
-		height: 32px;
-		background-color: #3b82f6;
-		color: white;
-		box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+		@apply h-8 w-8 bg-blue-500 text-white shadow-md;
 	}
 
 	.focus-icon {

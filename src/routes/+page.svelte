@@ -16,7 +16,6 @@
 
 		<footer class="mt-16 text-center text-sm text-gray-500">
 			<p>Connect a MIDI keyboard to get started. Works in browsers that support WebMIDI.</p>
-			<p class="mt-2">Built with SvelteKit and Tailwind CSS</p>
 		</footer>
 	</div>
 </main>
