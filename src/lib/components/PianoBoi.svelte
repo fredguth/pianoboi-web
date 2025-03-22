@@ -50,34 +50,35 @@
 					const matchedSignature =
 						signatures.find((sig) => sig.id === chord.signature.id) || signatures[0];
 
+					// Process notes to ensure they have proper format and signature
+					const processedNotes = chord.notes.map((note: any) => {
+						// Convert _name to name if needed (for MIDI notes)
+						const processedNote =
+							note._name && !note.name
+								? {
+										name: note._name,
+										accidental: note._accidental || '',
+										octave: note._octave,
+										number: calculateNoteNumber(note._name, note._accidental || '', note._octave),
+										identifier: `${note._name}${note._accidental || ''}${note._octave}`,
+										attack: note._attack || 0.5,
+										release: note._release || 0.5
+									}
+								: { ...note };
+
+						// Ensure each note has the correct signature reference
+						processedNote.signature = matchedSignature;
+						return processedNote;
+					});
+
 					// Ensure all required fields are present
-					const processedChord = {
+					return {
 						...chord,
+						notes: processedNotes,
 						signature: matchedSignature,
 						id: chord.id || `chord-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 						timestamp: chord.timestamp || Date.now()
 					};
-
-					// Process notes to ensure they have proper format
-					if (processedChord.notes) {
-						processedChord.notes = processedChord.notes.map((note: any) => {
-							// Convert _name to name if needed (for MIDI notes)
-							if (note._name && !note.name) {
-								return {
-									name: note._name,
-									accidental: note._accidental || '',
-									octave: note._octave,
-									number: calculateNoteNumber(note._name, note._accidental || '', note._octave),
-									identifier: `${note._name}${note._accidental || ''}${note._octave}`,
-									attack: note._attack || 0.5,
-									release: note._release || 0.5
-								};
-							}
-							return note;
-						});
-					}
-
-					return processedChord;
 				});
 				console.log('Loaded saved chords:', savedChords);
 			}
@@ -110,9 +111,14 @@
 		}
 
 		const id = `chord-${Date.now()}`;
+		const notesWithSignature = activeNotes.map((note) => ({
+			...note,
+			signature: currentSignature
+		}));
+
 		const newChord = {
 			id,
-			notes: [...activeNotes],
+			notes: notesWithSignature,
 			signature: currentSignature,
 			timestamp: Date.now()
 		};
@@ -595,9 +601,14 @@
 		const majorMatches: number[] = [];
 		const minorMatches: number[] = [];
 
-		// We need to first get the scale chords for this chord's signature
-		const chordSignature = chordNotes[0]?.signature || currentSignature;
-		const savedChordScales = generateScaleChords(chordSignature);
+		if (!chordNotes || chordNotes.length === 0) return { majorMatches, minorMatches };
+
+		// Get the signature from the first note of the saved chord
+		const savedSignature = chordNotes[0]?.signature;
+		if (!savedSignature) return { majorMatches, minorMatches };
+
+		// Generate scale chords using the saved signature
+		const savedChordScales = generateScaleChords(savedSignature);
 
 		// Check each major scale chord
 		savedChordScales.major.forEach((chord, index) => {
