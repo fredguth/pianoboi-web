@@ -1522,13 +1522,6 @@
 
 							<div class="flex gap-2">
 								<button
-									class="flex items-center rounded bg-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-blue-600"
-									on:click={() => setCurrentChord('top')}
-								>
-									<i class="fas fa-arrow-to-top mr-1"></i>
-									Set Start
-								</button>
-								<button
 									class="rounded bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600"
 									on:click={() => {
 										savedChords = [];
@@ -1581,13 +1574,80 @@
 								
 								<!-- Primary visualization based on view mode -->
 								<div class="flex w-full">
-									<div class="flex-1">
+									<div class="flex-1 overflow-hidden">
 										{#if viewMode === 'keyboard'}
-											<Piano notes={chord.notes} readonly={true} compact={true} showLabels={true} />
+											<div class="overflow-x-auto">
+												<Piano notes={chord.notes} readonly={true} compact={true} showLabels={true} />
+											</div>
 										{:else}
-											<SheetMusic notes={chord.notes} signature={chord.signature} />
-											<!-- Add ChordDisplay for saved chords -->
-											<ChordDisplay notes={chord.notes} signature={chord.signature} debug={false} />
+											<div class="flex flex-col sm:flex-row gap-4">
+												<!-- Left: Sheet Music -->
+												<div class="flex-1">
+													<SheetMusic notes={chord.notes} signature={chord.signature} />
+												</div>
+												
+												<!-- Right: Chord Display Table -->
+												<div class="flex-1 flex flex-col gap-3">
+													<ChordDisplay notes={chord.notes} signature={chord.signature} debug={false} />
+													
+													<!-- Scale Degree Reference Table -->
+													<div class="flex w-full flex-col rounded-lg border bg-white p-3 shadow-sm">
+														<h3 class="mb-2 border-b pb-1 text-sm font-medium text-gray-700">
+															Key: {chord.signature.label}
+														</h3>
+														
+														{#if chord.signature}
+															{@const savedChordScales = generateScaleChords(chord.signature)}
+															{@const matches = findMatchingChordsForSaved(chord.notes)}
+															
+															<div class="overflow-hidden rounded border">
+																<table class="w-full text-sm">
+																	<thead class="bg-gray-50 text-xs font-medium text-gray-700">
+																		<tr>
+																			<th class="py-1 pl-2 text-left">Scale</th>
+																			<th class="py-1 text-center">I</th>
+																			<th class="py-1 text-center">II</th>
+																			<th class="py-1 text-center">III</th>
+																			<th class="py-1 text-center">IV</th>
+																			<th class="py-1 text-center">V</th>
+																			<th class="py-1 text-center">VI</th>
+																			<th class="py-1 text-center">VII</th>
+																		</tr>
+																	</thead>
+																	<tbody>
+																		<tr class="border-t">
+																			<td class="bg-blue-50 px-2 py-1 text-xs font-medium">Major</td>
+																			{#each savedChordScales.major as chord, i}
+																				<td
+																					class="py-1 text-center text-xs"
+																					class:bg-blue-100={i === 0 || i === 3 || i === 4}
+																					class:bg-green-200={matches.majorMatches.includes(i)}
+																					class:font-bold={matches.majorMatches.includes(i)}
+																				>
+																					{chord}
+																				</td>
+																			{/each}
+																		</tr>
+																		<tr class="border-t">
+																			<td class="bg-blue-50 px-2 py-1 text-xs font-medium">Minor</td>
+																			{#each savedChordScales.minor as chord, i}
+																				<td
+																					class="py-1 text-center text-xs"
+																					class:bg-blue-100={i === 0 || i === 3 || i === 4}
+																					class:bg-green-200={matches.minorMatches.includes(i)}
+																					class:font-bold={matches.minorMatches.includes(i)}
+																				>
+																					{chord}
+																				</td>
+																			{/each}
+																		</tr>
+																	</tbody>
+																</table>
+															</div>
+														{/if}
+													</div>
+												</div>
+											</div>
 										{/if}
 									</div>
 
