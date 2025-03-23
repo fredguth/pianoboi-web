@@ -20,6 +20,35 @@
 	let renderer: Renderer;
 	let context: any;
 
+	// Helper function to safely access note properties regardless of the note format
+	function getNoteProperty(note: any, prop: string, defaultValue: any = '') {
+		// Handle both standard note objects and WebMidi note objects
+		try {
+			// For standard notes
+			if (note[prop] !== undefined) {
+				return note[prop];
+			}
+			// For WebMidi notes with underscore prefix
+			if (note[`_${prop}`] !== undefined) {
+				return note[`_${prop}`];
+			}
+			// Fallback
+			return defaultValue;
+		} catch (err) {
+			console.error(`Error accessing ${prop} of note:`, note, err);
+			return defaultValue;
+		}
+	}
+	
+	// Helper to safely get the note name letter
+	function getNoteLetter(note: any): string {
+		const name = getNoteProperty(note, 'name', 'C');
+		if (typeof name === 'string' && name.length > 0) {
+			return name[0].toLowerCase();
+		}
+		return 'c';
+	}
+
 	onMount(() => {
 		initRenderer();
 		renderMusic();
@@ -115,10 +144,10 @@
 			const normalizedNotes = noteGroup.map((note) => {
 				// Create a deep copy to avoid modifying the original
 				const result = {
-					name: note.name,
-					accidental: note.accidental,
-					octave: note.octave,
-					number: note.number
+					name: getNoteProperty(note, 'name', 'C'),
+					accidental: getNoteProperty(note, 'accidental', ''),
+					octave: getNoteProperty(note, 'octave', 4),
+					number: getNoteProperty(note, 'number', 60)
 				};
 
 				// Handle enharmonic conversion based on key signature

@@ -111,29 +111,48 @@
 		}
 
 		const id = `chord-${Date.now()}`;
-		const notesWithSignature = activeNotes.map((note) => ({
-			...note,
-			signature: currentSignature
-		}));
+		
+		// Process notes to ensure consistent format before saving
+		const processedNotes = activeNotes.map((note) => {
+			// Check if this is a WebMidi note (which has _name, _accidental properties)
+			// or a manually created note (which has name, accidental properties)
+			const processedNote = {
+				name: note.name || note._name,
+				accidental: note.accidental || note._accidental || '',
+				octave: note.octave || note._octave,
+				number: note.number || calculateNoteNumber(
+					note.name || note._name, 
+					note.accidental || note._accidental || '', 
+					note.octave || note._octave
+				),
+				identifier: note.identifier || `${note.name || note._name}${note.accidental || note._accidental || ''}${note.octave || note._octave}`,
+				attack: note.attack || note._attack || 0.5,
+				release: note.release || note._release || 0.5,
+				signature: currentSignature
+			};
+			
+			console.log('Processed note for saving:', processedNote);
+			return processedNote;
+		});
 
 		const newChord = {
 			id,
-			notes: notesWithSignature,
+			notes: processedNotes,
 			signature: currentSignature,
 			timestamp: Date.now()
 		};
 
 		console.log('Creating new chord:', newChord);
 
-		// Add the chord to the list
+		// Simply create a new array reference for proper reactivity
 		if (currentChordId === 'top') {
 			savedChords = [newChord, ...savedChords];
 		} else if (currentChordId) {
 			const index = savedChords.findIndex((chord) => chord.id === currentChordId);
 			if (index !== -1) {
-				const newChords = [...savedChords];
-				newChords.splice(index + 1, 0, newChord);
-				savedChords = newChords;
+				const updatedChords = [...savedChords];
+				updatedChords.splice(index + 1, 0, newChord);
+				savedChords = updatedChords;
 			} else {
 				savedChords = [...savedChords, newChord];
 			}
@@ -156,13 +175,33 @@
 	// Function to set the current chord and update the insertion marker
 	function setCurrentChord(id: string | null): void {
 		currentChordId = id;
-		if (id) {
-			const markerId = id === 'top' ? 'insert-marker-top' : `insert-marker-${id}`;
-			const marker = document.getElementById(markerId);
-			if (marker) {
-				marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		
+		// Use a small delay to ensure DOM is updated before scrolling
+		setTimeout(() => {
+			if (id) {
+				// For insertion markers
+				const markerId = id === 'top' ? 'insert-marker-top' : `insert-marker-${id}`;
+				const marker = document.getElementById(markerId);
+				if (marker) {
+					console.log(`Scrolling to marker: ${markerId}`);
+					marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+				
+				// For the chord itself
+				if (id !== 'top') {
+					const chordElement = document.getElementById(id);
+					if (chordElement) {
+						console.log(`Scrolling to chord: ${id}`);
+						chordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						// Add some visual feedback using Tailwind classes
+						chordElement.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+						setTimeout(() => {
+							chordElement.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+						}, 1500);
+					}
+				}
 			}
-		}
+		}, 50);
 	}
 
 	// Function to handle dropdown menu visibility
@@ -177,6 +216,7 @@
 
 	// Delete a chord by ID
 	function deleteChord(id: string) {
+		// Create a new array reference for proper reactivity
 		savedChords = savedChords.filter((chord) => chord.id !== id);
 		persistSavedChords();
 
@@ -197,10 +237,6 @@
 		if (event.code === 'Space' && !event.repeat) {
 			event.preventDefault(); // Prevent scrolling
 			saveCurrentChord();
-			// Force a re-render to update UI
-			setTimeout(() => {
-				savedChords = [...savedChords];
-			}, 50);
 		}
 	}
 
@@ -295,11 +331,25 @@
 
 	function handleNoteOn(e: NoteMessageEvent) {
 		console.log('Note ON:', e.note);
-		activeNotes = [...activeNotes, e.note];
+		
+		// Create a standardized note object that's compatible with both MIDI and onscreen keyboard
+		const note = {
+			name: e.note.name,
+			accidental: e.note.accidental || '',
+			octave: e.note.octave,
+			number: e.note.number,
+			identifier: `${e.note.name}${e.note.accidental || ''}${e.note.octave}`,
+			attack: e.note.attack || 0.5,
+			release: e.note.release || 0.5
+		};
+		
+		console.log('Standardized MIDI note:', note);
+		activeNotes = [...activeNotes, note];
 	}
 
 	function handleNoteOff(e: NoteMessageEvent) {
 		console.log('Note OFF:', e.note);
+		// Filter using the note number and octave which are the most reliable identifiers
 		activeNotes = activeNotes.filter(
 			(note) => !(note.number === e.note.number && note.octave === e.note.octave)
 		);
@@ -912,7 +962,7 @@
 						{#each savedChords as chord, index}
 							<div
 								id={chord.id}
-								class="chord-container relative rounded-lg border bg-white p-3 shadow-sm transition-all hover:shadow"
+								class="chord-container relative rounded-lg border bg-white p-3 shadow-sm transition-all duration-300 hover:shadow"
 							>
 								<!-- Delete button -->
 								<button
@@ -1039,7 +1089,7 @@
 				<div>
 					<!-- Save button -->
 					<button
-						class="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 hover:shadow-md active:bg-blue-700"
+						class="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-blue-600 hover:shadow-md active:bg-blue-700 active:scale-95"
 						on:click={saveCurrentChord}
 					>
 						<i class="fas fa-save"></i>

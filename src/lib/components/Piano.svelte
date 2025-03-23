@@ -18,8 +18,21 @@
 	$: {
 		if (notes) {
 			activeKeys = notes.map(
-				(note) => `${note.name.toLowerCase()}${note.accidental || ''}${note.octave}`
-			);
+				(note) => {
+					try {
+						// Cast to any to allow access to both public and private properties
+						const noteAny = note as any;
+						// Handle both regular notes (name) and WebMidi notes (_name)
+						const name = (noteAny.name || noteAny._name || '').toLowerCase();
+						const accidental = noteAny.accidental || noteAny._accidental || '';
+						const octave = noteAny.octave || noteAny._octave;
+						return `${name}${accidental}${octave}`;
+					} catch (err) {
+						console.error('Error processing note:', note, err);
+						return '';
+					}
+				}
+			).filter(key => key !== ''); // Filter out any empty keys from errors
 		}
 	}
 
