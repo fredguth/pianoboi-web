@@ -62,7 +62,7 @@
 
 <div class="mt-6 w-full">
 	<div class="rounded-lg bg-gray-50 p-4">
-		<h3 class="mb-2 text-lg font-semibold text-gray-800">Chord Detection</h3>
+		<h3 class="mb-2 text-md font-semibold text-gray-800">Chord Detection</h3>
 
 		{#if debug && notes.length > 0}
 			<div class="mb-3 text-xs text-gray-500">
