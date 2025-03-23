@@ -723,6 +723,82 @@
 							</div>
 						</button>
 					</div>
+					
+					<!-- Key Signature Dropdown -->
+					<div class="relative">
+						<button
+							class="flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-sm font-medium shadow hover:bg-gray-50"
+							on:click={toggleKeyMenu}
+						>
+							<!-- Music Note Icon -->
+							<svg 
+								xmlns="http://www.w3.org/2000/svg" 
+								class="h-4 w-4 text-blue-600" 
+								viewBox="0 0 20 20" 
+								fill="currentColor"
+							>
+								<path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+							</svg>
+							<span class="font-medium text-gray-700">Key:</span>
+							<span class="ml-1 text-blue-600">{currentSignature.id}</span>
+							<svg
+								class="ml-1 h-4 w-4"
+								fill="currentColor"
+								viewBox="0 0 20 20"
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+									clip-rule="evenodd"
+								></path>
+							</svg>
+						</button>
+
+						{#if isKeyMenuOpen}
+							<div
+								class="absolute left-0 top-full z-30 mt-1 w-80 rounded-md border border-gray-200 bg-white p-2 shadow-lg"
+							>
+								<div class="mb-2 border-b pb-1 text-sm font-medium text-gray-700">Key Signatures</div>
+								<div class="grid grid-cols-2 gap-2">
+									{#each signatures as sig}
+										<button
+											class="flex flex-col items-start rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-blue-50"
+											class:bg-blue-100={currentSignature === sig}
+											on:click={() => {
+												currentSignature = sig;
+												isKeyMenuOpen = false;
+											}}
+										>
+											<span class="font-medium">{sig.id}</span>
+											<span class="text-xs text-gray-500">{sig.label}</span>
+											{#if sig.sharps > 0}
+												<span
+													class="mt-1 inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+												>
+													{sig.sharps}
+													{sig.sharps === 1 ? 'sharp' : 'sharps'}
+												</span>
+											{:else if sig.flats > 0}
+												<span
+													class="mt-1 inline-flex items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700"
+												>
+													{sig.flats}
+													{sig.flats === 1 ? 'flat' : 'flats'}
+												</span>
+											{:else}
+												<span
+													class="mt-1 inline-flex items-center rounded-md bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-600"
+												>
+													No sharps/flats
+												</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
 				</div>
 
 				<!-- Right-aligned MIDI Device Dropdown -->
@@ -808,74 +884,6 @@
 					<p>{midiError || 'WebMidi is not enabled. Please refresh to try again.'}</p>
 				</div>
 			{/if}
-
-			<!-- Key Signature Panel (Below Navigation) -->
-			<div class="header-content mt-2 flex flex-wrap gap-1.5 rounded-lg border bg-gray-50 p-2">
-				<div class="relative">
-					<button
-						class="flex items-center gap-1 rounded bg-blue-500 px-3 py-1.5 text-sm font-medium text-white"
-						on:click={toggleKeyMenu}
-					>
-						{currentSignature.id}
-						<svg
-							class="ml-1 h-4 w-4"
-							fill="currentColor"
-							viewBox="0 0 20 20"
-							xmlns="http://www.w3.org/2000/svg"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-								clip-rule="evenodd"
-							></path>
-						</svg>
-					</button>
-
-					{#if isKeyMenuOpen}
-						<div
-							class="absolute left-0 top-full z-30 mt-1 w-80 rounded-md border border-gray-200 bg-white p-2 shadow-lg"
-						>
-							<div class="mb-2 border-b pb-1 text-sm font-medium text-gray-700">Key Signatures</div>
-							<div class="grid grid-cols-2 gap-2">
-								{#each signatures as sig}
-									<button
-										class="flex flex-col items-start rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-blue-50"
-										class:bg-blue-100={currentSignature === sig}
-										on:click={() => {
-											currentSignature = sig;
-											isKeyMenuOpen = false;
-										}}
-									>
-										<span class="font-medium">{sig.id}</span>
-										<span class="text-xs text-gray-500">{sig.label}</span>
-										{#if sig.sharps > 0}
-											<span
-												class="mt-1 inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
-											>
-												{sig.sharps}
-												{sig.sharps === 1 ? 'sharp' : 'sharps'}
-											</span>
-										{:else if sig.flats > 0}
-											<span
-												class="mt-1 inline-flex items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700"
-											>
-												{sig.flats}
-												{sig.flats === 1 ? 'flat' : 'flats'}
-											</span>
-										{:else}
-											<span
-												class="mt-1 inline-flex items-center rounded-md bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-600"
-											>
-												No sharps/flats
-											</span>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
 		</div>
 	</header>
 
@@ -962,13 +970,13 @@
 										{:else}
 											<SheetMusic notes={chord.notes} signature={chord.signature} />
 											<!-- Add ChordDisplay for saved chords -->
-											<ChordDisplay notes={chord.notes} signature={chord.signature} />
+											<ChordDisplay notes={chord.notes} signature={chord.signature} debug={false} />
 										{/if}
 									</div>
 
 									<!-- Chord reference for saved chords -->
 									{#if viewMode === 'sheet'}
-										<div class="ml-2 w-80 border-l pl-2">
+										<div class="ml-2 w-64 border-l pl-2">
 											<table class="w-full text-xs">
 												<tbody>
 													<tr>
@@ -1107,23 +1115,22 @@
 
 			<!-- Sheet music display with chord reference table -->
 			<div class="mb-3 min-h-[80px] border-b pb-3">
-				<div class="flex">
+				<!-- Chord Detection & Reference Table in two columns on larger screens, stacked on smaller screens -->
+				<div class="flex flex-col sm:flex-row gap-4">
+					<!-- Left: Chord Detection -->
 					<div class="flex-1">
 						{#if activeNotes.length > 0}
 							<SheetMusic notes={activeNotes} signature={currentSignature} />
-							<!-- Add ChordDisplay component for active notes -->
-							<ChordDisplay notes={activeNotes} signature={currentSignature} debug={true} />
+							<ChordDisplay notes={activeNotes} signature={currentSignature} debug={false} />
 						{:else}
-							<div
-								class="flex h-full min-h-[80px] items-center justify-center text-sm text-gray-400"
-							>
+							<div class="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400">
 								Play notes to see sheet music
 							</div>
 						{/if}
 					</div>
-
-					<!-- Chord Reference Table - shown alongside sheet music -->
-					<div class="ml-4 mt-2 flex w-80 flex-col rounded-lg border bg-white p-3 shadow-sm">
+					
+					<!-- Right: Chord Reference Table -->
+					<div class="flex-1 flex w-full flex-col rounded-lg border bg-white p-3 shadow-sm">
 						<h3 class="mb-2 border-b pb-1 text-sm font-medium text-gray-700">
 							Key: {currentSignature.label}
 						</h3>
@@ -1171,17 +1178,6 @@
 									</tr>
 								</tbody>
 							</table>
-						</div>
-
-						<div class="mt-2 text-xs text-gray-500">
-							<div class="mb-1 flex items-center">
-								<span class="mr-2 h-3 w-3 rounded-full bg-blue-100"></span>
-								<span>Major chords: I, IV, V</span>
-							</div>
-							<div class="flex items-center">
-								<span class="mr-2 h-3 w-3 rounded-full bg-blue-100"></span>
-								<span>Minor chords: i, iv, v</span>
-							</div>
 						</div>
 					</div>
 				</div>
