@@ -7,6 +7,8 @@
 	import { WebMidi } from 'webmidi';
 	import Piano from './Piano.svelte';
 	import SheetMusic from './SheetMusic.svelte';
+	import ChordDisplay from './ChordDisplay.svelte';
+	import { Chord } from '@tonaljs/tonal';
 
 	// State
 	let midiEnabled = false;
@@ -503,142 +505,86 @@
 	// Scale degrees
 	$: scaleChords = generateScaleChords(currentSignature);
 
-	// Function to check if two sets of notes are equivalent (same pitch classes)
-	function chordsEqual(playedNotes: any[], chordNotes: any): boolean {
-		if (!playedNotes.length) return false;
-		if (typeof chordNotes === 'string') {
-			// If chordNotes is a string (like "Cmaj"), convert it to note array
-			const noteArray = getChordNotes(chordNotes);
-			if (!noteArray.length) return false;
-
-			// Get note names from the played notes (ignoring octave)
-			const playedPitchClasses = playedNotes
-				.map((note: any) => {
-					// Handle both WebMidi note objects and string format
-					const noteName = note.name || note._name || note;
-					const accidental = note.accidental || note._accidental || '';
-					return `${noteName}${accidental}`.toUpperCase();
-				})
-				.sort();
-
-			// Sort the chord notes for comparison
-			const chordPitchClasses = noteArray.sort();
-
-			// Compare arrays
-			if (playedPitchClasses.length !== chordPitchClasses.length) return false;
-
-			for (let i = 0; i < playedPitchClasses.length; i++) {
-				if (playedPitchClasses[i] !== chordPitchClasses[i]) return false;
+	// Import and update helper function to safely get note properties, similar to ChordDisplay
+	function getNoteProperty(note: any, prop: string, defaultValue: any = '') {
+		try {
+			if (note[prop] !== undefined) {
+				return note[prop];
 			}
-
-			return true;
-		} else if (Array.isArray(chordNotes)) {
-			// Direct comparison of two arrays of notes
-			const playedPitchClasses = playedNotes
-				.map((note: any) => {
-					const noteName = note.name || note._name || note;
-					const accidental = note.accidental || note._accidental || '';
-					return `${noteName}${accidental}`.toUpperCase();
-				})
-				.sort();
-
-			const chordPitchClasses = chordNotes
-				.map((note: any) => {
-					const noteName = note.name || note._name || note;
-					const accidental = note.accidental || note._accidental || '';
-					return `${noteName}${accidental}`.toUpperCase();
-				})
-				.sort();
-
-			// Compare arrays
-			if (playedPitchClasses.length !== chordPitchClasses.length) return false;
-
-			for (let i = 0; i < playedPitchClasses.length; i++) {
-				if (playedPitchClasses[i] !== chordPitchClasses[i]) return false;
+			if (note[`_${prop}`] !== undefined) {
+				return note[`_${prop}`];
 			}
-
-			return true;
+			return defaultValue;
+		} catch (err) {
+			console.error(`Error accessing ${prop} of note:`, note);
+			return defaultValue;
 		}
-
-		return false;
 	}
 
-	// Function to get notes from a chord name (e.g., "C", "Dm", "G7")
-	function getChordNotes(chordName: string): string[] {
-		// Basic implementation for triads
-		// This is a simplified version - in a complete implementation
-		// you'd handle more complex chords (7ths, 9ths, etc.)
-
-		// Extract root and chord type
-		const match = chordName.match(/([A-G][#b]?)([^A-G]*)/);
-		if (!match) return [];
-
-		const [_, root, quality] = match;
-
-		// Define intervals for different chord types
-		let intervals;
-		if (quality === 'm' || quality === 'min') {
-			// Minor chord: root, minor 3rd, perfect 5th
-			intervals = [0, 3, 7];
-		} else if (quality === 'dim') {
-			// Diminished chord: root, minor 3rd, diminished 5th
-			intervals = [0, 3, 6];
-		} else if (quality === 'aug') {
-			// Augmented chord: root, major 3rd, augmented 5th
-			intervals = [0, 4, 8];
-		} else {
-			// Major chord: root, major 3rd, perfect 5th
-			intervals = [0, 4, 7];
-		}
-
-		// Convert root to pitch class
-		const rootValues: { [key: string]: number } = {
-			C: 0,
-			'C#': 1,
-			Db: 1,
-			D: 2,
-			'D#': 3,
-			Eb: 3,
-			E: 4,
-			F: 5,
-			'F#': 6,
-			Gb: 6,
-			G: 7,
-			'G#': 8,
-			Ab: 8,
-			A: 9,
-			'A#': 10,
-			Bb: 10,
-			B: 11,
-			Cb: 11
-		};
-
-		const rootIndex = rootValues[root];
-		if (rootIndex === undefined) return [];
-
-		// Calculate note names from intervals
-		const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-		return intervals.map((interval) => {
-			const index = (rootIndex + interval) % 12;
-			return noteNames[index];
-		});
+	// Helper to extract pitch classes from notes
+	function extractPitchClasses(notes: any[]): string[] {
+		return Array.from(
+			new Set(
+				notes.map((note) => {
+					const name = getNoteProperty(note, 'name', '');
+					const accidental = getNoteProperty(note, 'accidental', '');
+					return name + (accidental || '');
+				})
+			)
+		);
 	}
 
-	// Function to find matching chords in the scale
+	// Function to find matching chords in the scale using tonal.js
 	function findMatchingChords(notes: any[]) {
 		const majorMatches: number[] = [];
 		const minorMatches: number[] = [];
 
-		// Check each major scale chord
+		if (!notes || notes.length === 0) return { majorMatches, minorMatches };
+		
+		// Extract pitch classes (unique note names without octave)
+		const pitchClasses = extractPitchClasses(notes);
+		
+		// Get detected chords using tonal.js
+		const detectedChords = Chord.detect(pitchClasses);
+		console.log('Chord.detect results for scale matching:', detectedChords);
+		
+		// Match with scale chords
 		scaleChords.major.forEach((chord, index) => {
-			if (chordsEqual(notes, chord)) {
+			// Check if any detected chord matches this scale chord position
+			const matchesPosition = detectedChords.some((detected: string) => {
+				// Extract root and type for comparison
+				const match = detected.match(/^([A-G][#b]?)(.*)$/);
+				if (!match) return false;
+				const detectedRoot = match[1];
+				
+				const chordMatch = chord.match(/^([A-G][#b]?)(.*)$/);
+				if (!chordMatch) return false;
+				const chordRoot = chordMatch[1];
+				
+				// Check if the roots match (ignoring octave, considering enharmonic equivalents)
+				return detectedRoot.toUpperCase() === chordRoot.toUpperCase();
+			});
+			
+			if (matchesPosition) {
 				majorMatches.push(index);
 			}
 		});
-
-		// Check each minor scale chord
+		
+		// Check minor scale chords with the same approach
 		scaleChords.minor.forEach((chord, index) => {
-			if (chordsEqual(notes, chord)) {
+			const matchesPosition = detectedChords.some((detected: string) => {
+				const match = detected.match(/^([A-G][#b]?)(.*)$/);
+				if (!match) return false;
+				const detectedRoot = match[1];
+				
+				const chordMatch = chord.match(/^([A-G][#b]?)(.*)$/);
+				if (!chordMatch) return false;
+				const chordRoot = chordMatch[1];
+				
+				return detectedRoot.toUpperCase() === chordRoot.toUpperCase();
+			});
+			
+			if (matchesPosition) {
 				minorMatches.push(index);
 			}
 		});
@@ -646,7 +592,7 @@
 		return { majorMatches, minorMatches };
 	}
 
-	// Function to find matching chords for a saved chord
+	// Function to find matching chords for a saved chord using tonal.js
 	function findMatchingChordsForSaved(chordNotes: any[]) {
 		const majorMatches: number[] = [];
 		const minorMatches: number[] = [];
@@ -659,17 +605,47 @@
 
 		// Generate scale chords using the saved signature
 		const savedChordScales = generateScaleChords(savedSignature);
-
-		// Check each major scale chord
+		
+		// Extract pitch classes from the chord notes
+		const pitchClasses = extractPitchClasses(chordNotes);
+		
+		// Get detected chords using tonal.js
+		const detectedChords = Chord.detect(pitchClasses);
+		console.log('Chord.detect results for saved chord:', detectedChords);
+		
+		// Match with scale chords using the same approach as above
 		savedChordScales.major.forEach((chord, index) => {
-			if (chordsEqual(chordNotes, chord)) {
+			const matchesPosition = detectedChords.some((detected: string) => {
+				const match = detected.match(/^([A-G][#b]?)(.*)$/);
+				if (!match) return false;
+				const detectedRoot = match[1];
+				
+				const chordMatch = chord.match(/^([A-G][#b]?)(.*)$/);
+				if (!chordMatch) return false;
+				const chordRoot = chordMatch[1];
+				
+				return detectedRoot.toUpperCase() === chordRoot.toUpperCase();
+			});
+			
+			if (matchesPosition) {
 				majorMatches.push(index);
 			}
 		});
-
-		// Check each minor scale chord
+		
 		savedChordScales.minor.forEach((chord, index) => {
-			if (chordsEqual(chordNotes, chord)) {
+			const matchesPosition = detectedChords.some((detected: string) => {
+				const match = detected.match(/^([A-G][#b]?)(.*)$/);
+				if (!match) return false;
+				const detectedRoot = match[1];
+				
+				const chordMatch = chord.match(/^([A-G][#b]?)(.*)$/);
+				if (!chordMatch) return false;
+				const chordRoot = chordMatch[1];
+				
+				return detectedRoot.toUpperCase() === chordRoot.toUpperCase();
+			});
+			
+			if (matchesPosition) {
 				minorMatches.push(index);
 			}
 		});
@@ -985,6 +961,8 @@
 											<Piano notes={chord.notes} readonly={true} compact={true} showLabels={true} />
 										{:else}
 											<SheetMusic notes={chord.notes} signature={chord.signature} />
+											<!-- Add ChordDisplay for saved chords -->
+											<ChordDisplay notes={chord.notes} signature={chord.signature} />
 										{/if}
 									</div>
 
@@ -1133,6 +1111,8 @@
 					<div class="flex-1">
 						{#if activeNotes.length > 0}
 							<SheetMusic notes={activeNotes} signature={currentSignature} />
+							<!-- Add ChordDisplay component for active notes -->
+							<ChordDisplay notes={activeNotes} signature={currentSignature} debug={true} />
 						{:else}
 							<div
 								class="flex h-full min-h-[80px] items-center justify-center text-sm text-gray-400"

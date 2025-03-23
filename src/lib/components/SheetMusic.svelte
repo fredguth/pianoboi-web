@@ -319,12 +319,19 @@
 			connector.setContext(context).draw();
 
 			// Sort notes by pitch
-			const sortedNotes = [...notes].sort((a, b) => a.number - b.number);
+			const sortedNotes = [...notes].sort((a, b) => {
+				const aNum = getNoteProperty(a, 'number', 0);
+				const bNum = getNoteProperty(b, 'number', 0);
+				return aNum - bNum;
+			});
 			console.log('Sorted notes for rendering:', sortedNotes);
 
 			// Ensure notes have all required properties
 			const validNotes = sortedNotes.filter((note) => {
-				const hasRequiredProps = note && note.name && note.octave !== undefined;
+				const hasRequiredProps = 
+					!!getNoteProperty(note, 'name') && 
+					getNoteProperty(note, 'octave') !== undefined;
+				
 				if (!hasRequiredProps) {
 					console.warn('Invalid note found:', note);
 				}
@@ -332,8 +339,16 @@
 			});
 
 			// Group notes by clef
-			const trebleNotes = validNotes.filter((note) => note.octave >= 4);
-			const bassNotes = validNotes.filter((note) => note.octave < 4);
+			const trebleNotes = validNotes.filter((note) => {
+				const octave = getNoteProperty(note, 'octave', 0);
+				return octave >= 4;
+			});
+			
+			const bassNotes = validNotes.filter((note) => {
+				const octave = getNoteProperty(note, 'octave', 0);
+				return octave < 4;
+			});
+			
 			console.log('Treble notes:', trebleNotes, 'Bass notes:', bassNotes);
 
 			// Create the notes/rests for each stave
