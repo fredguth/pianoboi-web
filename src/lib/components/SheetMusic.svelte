@@ -39,15 +39,6 @@
 			return defaultValue;
 		}
 	}
-	
-	// Helper to safely get the note name letter
-	function getNoteLetter(note: any): string {
-		const name = getNoteProperty(note, 'name', 'C');
-		if (typeof name === 'string' && name.length > 0) {
-			return name[0].toLowerCase();
-		}
-		return 'c';
-	}
 
 	onMount(() => {
 		initRenderer();
@@ -328,10 +319,9 @@
 
 			// Ensure notes have all required properties
 			const validNotes = sortedNotes.filter((note) => {
-				const hasRequiredProps = 
-					!!getNoteProperty(note, 'name') && 
-					getNoteProperty(note, 'octave') !== undefined;
-				
+				const hasRequiredProps =
+					!!getNoteProperty(note, 'name') && getNoteProperty(note, 'octave') !== undefined;
+
 				if (!hasRequiredProps) {
 					console.warn('Invalid note found:', note);
 				}
@@ -343,12 +333,12 @@
 				const octave = getNoteProperty(note, 'octave', 0);
 				return octave >= 4;
 			});
-			
+
 			const bassNotes = validNotes.filter((note) => {
 				const octave = getNoteProperty(note, 'octave', 0);
 				return octave < 4;
 			});
-			
+
 			console.log('Treble notes:', trebleNotes, 'Bass notes:', bassNotes);
 
 			// Create the notes/rests for each stave
@@ -405,7 +395,7 @@
 
 <style>
 	.sheet-music {
-		min-height: 200px;
+		min-height: 250px;
 		background: white;
 		border-radius: 4px;
 		overflow: hidden;

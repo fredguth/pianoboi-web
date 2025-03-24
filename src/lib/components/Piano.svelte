@@ -17,8 +17,8 @@
 	// Update active keys when notes change
 	$: {
 		if (notes) {
-			activeKeys = notes.map(
-				(note) => {
+			activeKeys = notes
+				.map((note) => {
 					try {
 						// Cast to any to allow access to both public and private properties
 						const noteAny = note as any;
@@ -31,8 +31,8 @@
 						console.error('Error processing note:', note, err);
 						return '';
 					}
-				}
-			).filter(key => key !== ''); // Filter out any empty keys from errors
+				})
+				.filter((key) => key !== ''); // Filter out any empty keys from errors
 		}
 	}
 
@@ -101,7 +101,7 @@
 
 <div class="piano-wrapper w-full overflow-hidden">
 	<div
-		class="piano-container flex pb-2 pt-1 overflow-x-auto"
+		class="piano-container flex overflow-x-auto pb-2 pt-1"
 		bind:this={container}
 		class:non-interactive={readonly}
 	>
