@@ -1894,14 +1894,8 @@
 				<div class="flex flex-col gap-4 sm:flex-row">
 					<!-- Left: Chord Detection -->
 					<div class="flex-1">
-						{#if activeNotes.length > 0}
-							<SheetMusic notes={activeNotes} signature={currentSignature} />
-							<ChordDisplay notes={activeNotes} signature={currentSignature} debug={false} />
-						{:else}
-							<div class="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400">
-								Play notes to see sheet music
-							</div>
-						{/if}
+						<SheetMusic notes={activeNotes} signature={currentSignature} />
+						<ChordDisplay notes={activeNotes} signature={currentSignature} debug={false} />
 					</div>
 
 					<!-- Right: Chord Reference Table -->

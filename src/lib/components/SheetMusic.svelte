@@ -345,21 +345,21 @@
 			let trebleVoiceNotes = [];
 			let bassVoiceNotes = [];
 
-			// If we have notes, create chord notes, otherwise use whole rests
-			if (trebleNotes.length > 0) {
+			// Always create a whole rest for each stave if no notes are present
+			if (trebleNotes.length === 0) {
+				trebleVoiceNotes.push(createWholeRest('treble'));
+			} else {
 				const trebleChord = createChordNote('treble', trebleNotes);
 				if (trebleChord) trebleVoiceNotes.push(trebleChord);
 				else trebleVoiceNotes.push(createWholeRest('treble'));
-			} else {
-				trebleVoiceNotes.push(createWholeRest('treble'));
 			}
 
-			if (bassNotes.length > 0) {
+			if (bassNotes.length === 0) {
+				bassVoiceNotes.push(createWholeRest('bass'));
+			} else {
 				const bassChord = createChordNote('bass', bassNotes);
 				if (bassChord) bassVoiceNotes.push(bassChord);
 				else bassVoiceNotes.push(createWholeRest('bass'));
-			} else {
-				bassVoiceNotes.push(createWholeRest('bass'));
 			}
 
 			console.log('Treble voice notes:', trebleVoiceNotes, 'Bass voice notes:', bassVoiceNotes);
