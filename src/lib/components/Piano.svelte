@@ -101,7 +101,7 @@
 
 <div class="piano-wrapper w-full overflow-hidden">
 	<div
-		class="piano-container flex overflow-x-auto pb-2 pt-1"
+		class="piano-container flex select-none overflow-x-auto pb-2 pt-1"
 		bind:this={container}
 		class:non-interactive={readonly}
 	>
